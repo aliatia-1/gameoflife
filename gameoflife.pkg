@@ -1,0 +1,10 @@
+v 3
+
+d gameoflife
+d
+d Written by Ali Atia
+d
+d Play Conway's Game of Life
+
+f gameoflife.ado
+f gameoflife.sthlp
