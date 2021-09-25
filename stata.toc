@@ -1,0 +1,4 @@
+v 3
+d Ali Atia
+d gameoflife: Play Conway's Game of Life
+p gameoflife
