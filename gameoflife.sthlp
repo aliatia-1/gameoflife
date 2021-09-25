@@ -10,7 +10,7 @@
 {marker description}{...}
 {title:Description}
 
-{cmd:gameoflife} simulates and visualizes a cellular automaton following the rules of Conway's Game of Life with wraparound borders.
+{cmd:gameoflife} simulates and visualizes Conway's Game of Life with wraparound borders.
 
 {marker options}{...}
 {title:Options}
