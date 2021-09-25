@@ -1,7 +1,6 @@
 program define gameoflife
 	quietly{
 		syntax, Time(integer) Dimensions(integer) Visualize(str asis) [*]
-		noisily mac li
 		if !inlist("`visualize'","plot","twoway"){
 			noisily di as error "Arguments for the visualize option can be plot or twoway"
 			exit
