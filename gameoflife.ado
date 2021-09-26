@@ -24,7 +24,7 @@ program define gameoflife
 		local up `""0 -`dimensions'" "1 -`dimensions'" "1 0" "1 -1" "0 -1" "-1 -1" "-1 0" "-1 -`dimensions'""'
 		local left `""0 1" "1 1" "1 0" "1 -1" "0 -1" "`dimensions' -1" "`dimensions' 0" "`dimensions' 1""'
 		local down `""0 1" "1 1" "1 0" "1 `dimensions'" "0 `dimensions'" "-1 `dimensions'" "-1 0" "-1 1""'
-		local right `""0 1" "`dimensions' 1" "`dimensions' 0" "`dimensions' -1" "0 -1" "-1 -1" "-1 0" "-1 1""'
+		local right `""0 1" "-`dimensions' 1" "-`dimensions' 0" "-`dimensions' -1" "0 -1" "-1 -1" "-1 0" "-1 1""'
 		local up_left `""0 -`dimensions'" "1 -`dimensions'" "1 0" "1 -1" "0 -1" "`dimensions' -1" "`dimensions' 0" "`dimensions' -`dimensions'""'
 		local up_right `""0 -`dimensions'" "`dimensions' -`dimensions'" "`dimensions' 0" "`dimensions' -1" "0 -1" "-1 -1" "-1 0" "-1 -`dimensions'""'
 		local down_left `""0 1" "1 1" "1 0" "1 `dimensions'" "0 `dimensions'" "`dimensions' `dimensions'" "`dimensions' 0" "`dimensions' 1""'
