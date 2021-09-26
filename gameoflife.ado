@@ -53,21 +53,21 @@ program define gameoflife
 			replace time = `x'
 			merge m:1 time neighbor using `temp2', nogen keepusing(neighboralive)
 			merge m:1 time self using `temp2', nogen keepusing(alive_1)
-			bysort self: egen dimensionsalive = total(neighboralive==1)
+			bysort self: egen howmanyalive = total(neighboralive==1)
 			if "`visualize'"=="twoway" & `x'==1{
 				twoway scatter dimy dimx if alive, mcolor(black) ||, name(time0,replace)  ysc(r(0 `dimensions') off) xsc(r(0 `dimensions') off) xtitle("") ytitle("") graphregion(margin(zero)) legend(off) yla(,nogrid) `options'
 			}
 			if "`visualize'"=="plot" & `x'==1{
 			    noisily plot dimy dimx if alive `options'
 			}
-			replace alive = (alive_1==1 & inlist(dimensionsalive,2,3)) | (alive_1==0 & dimensionsalive==3)
+			replace alive = (alive_1==1 & inlist(howmanyalive,2,3)) | (alive_1==0 & howmanyalive==3)
 			if "`visualize'"=="twoway"{
 				twoway scatter dimy dimx if alive,  mcolor(black) ||, name(time`x',replace) ysc(r(0 `dimensions') off) xsc(r(0 `dimensions') off) xtitle("") ytitle("") graphregion(margin(zero)) legend(off) yla(,nogrid) `options'
 			}
 			if "`visualize'"=="plot"{
 				noisily plot dimy dimx if alive `options'
 			}
-			drop neighboralive alive_1 dimensionsalive
+			drop neighboralive alive_1 howmanyalive
 
 		}
 	}
