@@ -6,7 +6,7 @@ program define gameoflife
 			exit
 		}
 		preserve
-		clear all
+		clear
 		set obs `=(`dimensions'+1)^2'
 		egen time = seq(), f(0) b(`=(`dimensions'+1)^2')
 		egen dimx = seq(),f(0) t(`=`dimensions'') b(`=`dimensions'+1')
