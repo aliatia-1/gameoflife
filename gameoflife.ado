@@ -1,74 +1,198 @@
+*! gameoflife, v2 (02.07.2022), Ali Atia, alitarekatia@gmail.com
+*===============================================================================
+* Program: gameoflife
+* Update: Expanded functionality and improved efficiency
+* Author:  Ali Atia
+* Version: 2 (02.07.2022)
+*===============================================================================
+
 program define gameoflife
 	quietly{
-		syntax, Time(integer) Dimensions(integer) Visualize(str asis) [*]
-		if !inlist("`visualize'","plot","twoway"){
-			noisily di as error "Arguments for the visualize option can be plot or twoway"
+		preserve
+		syntax, Time(integer) Visualize(str) Dimensions(integer) border(str) [Input(str) Export(str) name(str) switchat(numlist max=1) switchto(str)]
+		
+		if !inlist("`visualize'","plot","twoway","none") | !inlist(`"`switchto'"',"plot","twoway","none",""){
+			noisily di as error "Incorrect visualization format specified."
 			exit
 		}
-		preserve
-		clear
-		set obs `=(`dimensions'+1)^2'
-		egen time = seq(), f(0) b(`=(`dimensions'+1)^2')
-		egen dimx = seq(),f(0) t(`=`dimensions'') b(`=`dimensions'+1')
-		egen dimy = seq(),f(0) t(`=`dimensions'')
-		gen self = strofreal(dimx) + " " + strofreal(dimy)
-		gen alive = runiformint(0,1) 
-		gen up = dimy==`dimensions'
-		gen down = dimy==0
-		gen left = dimx==0
-		gen right = dimx==`dimensions'
-		foreach i in up_left up_right down_left down_right{
-			gen `i' = `=subinstr("`i'","_"," & ",1)'
+		if !inlist("`border'","dead","infinite","wrap"){
+			noisily di as error "Incorrect border-type specified."
+			exit
 		}
-		local a `""0 1" "1 1" "1 0" "1 -1" "0 -1" "-1 -1" "-1 0" "-1 1""'
-		local up `""0 -`dimensions'" "1 -`dimensions'" "1 0" "1 -1" "0 -1" "-1 -1" "-1 0" "-1 -`dimensions'""'
-		local left `""0 1" "1 1" "1 0" "1 -1" "0 -1" "`dimensions' -1" "`dimensions' 0" "`dimensions' 1""'
-		local down `""0 1" "1 1" "1 0" "1 `dimensions'" "0 `dimensions'" "-1 `dimensions'" "-1 0" "-1 1""'
-		local right `""0 1" "-`dimensions' 1" "-`dimensions' 0" "-`dimensions' -1" "0 -1" "-1 -1" "-1 0" "-1 1""'
-		local up_left `""0 -`dimensions'" "1 -`dimensions'" "1 0" "1 -1" "0 -1" "`dimensions' -1" "`dimensions' 0" "`dimensions' -`dimensions'""'
-		local up_right `""0 -`dimensions'" "-`dimensions' -`dimensions'" "-`dimensions' 0" "-`dimensions' -1" "0 -1" "-1 -1" "-1 0" "-1 -`dimensions'""'
-		local down_left `""0 1" "1 1" "1 0" "1 `dimensions'" "0 `dimensions'" "`dimensions' `dimensions'" "`dimensions' 0" "`dimensions' 1""'
-		local down_right `""0 1" "-`dimensions' 1" "-`dimensions' 0" "-`dimensions' `dimensions'" "0 `dimensions'" "-1 `dimensions'" "-1 0" "-1 1""'
+		if ("`switchat'"=="" & "`switchto'"!="") | ("`switchat'"!="" & "`switchto'"==""){
+			noisily di as error "Switchat() and switchto() must be specified together."
+			exit
+		}
+		
+		local type = substr("`input'",strlen("`input'")-2,3)
+		
+		if !inlist("`type'","csv","dta",""){
+			noisily di as error "Incorrect input filetype specified."
+			exit
+		}
 
-		forval x = 1/8{
-			gen neighbor`x' = ""
-			replace neighbor`x' = strofreal(dimx + `:word 1 of `:word `x' of `a''') + " " + strofreal(dimy + `:word 2 of `:word `x' of `a''')
-			foreach i in up down left right up_left up_right down_left down_right{
-				replace neighbor`x' = strofreal(dimx + `:word 1 of `:word `x' of ``i'''') + " " + strofreal(dimy + `:word 2 of `:word `x' of ``i'''') if `i'
-			}
+		if `"`border'"'=="dead" local dimensions = `dimensions'+2 
+		
+		if `"`input'"'==""{
+			clear
+			set obs `=(`dimensions'+1)^2'
+			egen dimx = seq(),f(0) t(`=`dimensions'') b(`=`dimensions'+1')
+			egen dimy = seq(),f(0) t(`=`dimensions'')
+			gen self = strofreal(dimx) + " " + strofreal(dimy)
+			gen alive = runiformint(0,1)
 		}
-		reshape long neighbor, i(time dimy dimx self) j(new,string)
-		keep time dimy dimx self alive neighbor
+		
+		if `"`type'"'!="dta"{
+			if `"`type'"'=="csv"{				
+				clear
+				import delimited `"`input'"',clear
+				foreach v of varlist *{
+					cap replace `v'="0" if `v'=="*"
+					cap destring `v', force replace
+					replace `v' = `v'!=.
+				}
+				rename * v#, renumber
+				ds
+				if (`=_N'>`dimensions') | (`:word count `r(varlist)''>`dimensions') local dimensions = max(`=_N',`:word count `r(varlist)'')
+				local amountrows = ceil((`dimensions'-`=_N')/2)
+				local last =subinstr("`:word `:word count `r(varlist)'' of `r(varlist)''","v","",.)
+				local amountcols = ceil((`dimensions'-`:word count `r(varlist)'')/2)
+				insobs `amountrows',after(`=_N')
+				insobs `amountrows',before(1)
+				foreach v of varlist *{
+					replace `v' = 0 if `v'==.
+				}
+				rename v# v#, renumber(`=`amountcols'+1')
+				forval x = 1/`amountcols'{
+					gen v`x' = 0
+					gen v`=`last'+`amountcols'+`x'' = 0
+				}
+				order *, seq
+				rename v* y*
+				forval x = 1/`dimensions'{
+					if "`type'"=="txt" gen y`x' = x`x'==" "
+					gen new`x' = _n if y`x'
+					levelsof new`x', local(alive`x')
+					if "`alive`x''"!=""{ 
+						local listy `listy' (dimx == `x' &
+						forval y = 1/`:word count `alive`x'''{
+							local newamount =`dimensions'-`:word `y' of `alive`x'''
+							if `:word count `alive`x'''==1 local listy `listy' (dimy == `newamount')) |
+							else if `y'==1 local listy `listy' ((dimy == `newamount') |
+							else if `y'!=`:word count `alive`x''' & `y'!=1 local listy `listy' (dimy == `newamount') |
+							else if `y'==`:word count `alive`x''' local listy `listy' (dimy == `newamount'))) |
+						}
+					}
+				}
+				
+				local listy = substr("`listy'",1,strlen("`listy'")-1)
+				keep y*
+				set obs `=(`dimensions'+1)^2'
+				egen dimx = seq(),f(0) t(`dimensions') b(`=`dimensions'+1')
+				egen dimy = seq(),f(0) t(`dimensions')
+				gen self = strofreal(dimx) + " " +strofreal(dimy)
+				gen alive = `listy'
+				drop y*
+			}
+
+			if `"`border'"'=="dead" replace alive = 0 if dimy>=`dimensions' | dimy<=0 | dimx<=0 | dimx>=`dimensions'
+				
+			expand 9, gen(expand)
+			
+			bys self: replace expand = _n
+			
+			gen a1 = "0 0 1 1 1 0 -1 -1 -1"
+			gen a2 = "0 1 1 0 -1 -1 -1 0 1"
+			
+			if `"`border'"'=="wrap" gen neighbor = strofreal(mod(dimx + real(word(a1,expand)),`=`dimensions'+1')) + " " + strofreal(mod(dimy + real(word(a2,expand)),`=`dimensions'+1'))
+			else gen neighbor = strofreal(dimx + real(word(a1,expand))) + " " + strofreal(dimy + real(word(a2,expand)))
+			
+			replace alive = 500 if neighbor==self & alive==1
+		}
+		
+		else if "`type'"=="dta"{
+		    use `"`input'"', clear
+		}
+		
+		if `"`export'"'!=""{
+			save "`export'", replace
+		}
+		
+		foreach i in x y{
+			local `i'max `dimensions'
+			local `i'min 0
+		}
+		
+		if `"`border'"'=="infinite" local size_option msize(vsmall)
+		
+		if "`visualize'"=="twoway"{
+			twoway scatter dimy dimx if alive, mcolor(black) `size_option'||, name(time0,replace)  ysc(r(0 `dimensions') off) xsc(r(0 `dimensions') off) xtitle("") ytitle("") graphregion(margin(zero) color(white)) legend(off) yla(,nogrid) plotregion(lcolor(black))
+			if `"`export'"'!="" gr export "`export'_`:di %0`=strlen("`time'")'.0f 0'.png", as(png) replace width(1080) height(1080)
+			gr drop time0
+		}
+			
+		if "`visualize'"=="plot" noisily plot dimy dimx if alive
+		
 		forval x = 1/`time'{
-			tempfile temp
-			save `temp'
-			collapse (first) alive,by(time self)
-			gen neighbor = self
-			gen neighboralive = alive
-			rename alive alive_1
-			replace time = `x'
-			tempfile temp2
-			save `temp2'
-			use `temp',clear
-			replace time = `x'
-			merge m:1 time neighbor using `temp2', nogen keepusing(neighboralive)
-			merge m:1 time self using `temp2', nogen keepusing(alive_1)
-			bysort self: egen howmanyalive = total(neighboralive==1)
-			if "`visualize'"=="twoway" & `x'==1{
-				twoway scatter dimy dimx if alive, mcolor(black) ||, name(time0,replace)  ysc(r(0 `dimensions') off) xsc(r(0 `dimensions') off) xtitle("") ytitle("") graphregion(margin(zero)) legend(off) yla(,nogrid) `options'
+			
+			if "`switchat'"!=""{
+				if `x'==`switchat' local visualize `"`switchto'"'
 			}
-			if "`visualize'"=="plot" & `x'==1{
-			    noisily plot dimy dimx if alive `options'
+			
+			replace alive = 500 if neighbor==self & alive==1
+			
+			keep if alive!=0
+			collapse (sum) howmanyalive=alive, by(neighbor)
+			keep if inlist(howmanyalive,502,503,2,3)
+			generate alive = howmanyalive>500
+			
+			rename neighbor self
+			
+			gen neighbor=""
+			
+			gen dimx = real(word(self,1))
+			gen dimy = real(word(self,2))
+			
+			expand 9, gen(expand)
+			
+			bys self: replace expand = _n
+			
+			gen a1 = "0 0 1 1 1 0 -1 -1 -1"
+			gen a2 = "0 1 1 0 -1 -1 -1 0 1"
+			
+			if `"`border'"'=="wrap" replace neighbor = strofreal(mod(dimx + real(word(a1,expand)),`=`dimensions'+1')) + " " + strofreal(mod(dimy + real(word(a2,expand)),`=`dimensions'+1'))
+			else replace neighbor = strofreal(dimx + real(word(a1,expand))) + " " + strofreal(dimy + real(word(a2,expand)))
+			
+			replace alive = (alive==1 & inlist(howmanyalive,2,3,502,503)) | (alive==0 & inlist(howmanyalive,3,503))
+			
+			drop howmanyalive
+			
+			if "`border'"=="dead" replace alive = 0 if inlist(0,dimy,dimx) | inlist(`dimensions',dimy,dimx)
+			
+			if "`border'"=="infinite" & "`visualize'"=="twoway"{
+				foreach i in x y{
+					sum dim`i' if alive
+					local `i'max_difference = `r(max)'-``i'max' 
+					local `i'min_difference = `r(min)'-``i'min' 
+					if ``i'max_difference'>0 & ``i'min_difference'<0 local `i'difference = max(``i'max_difference',abs(``i'min_difference'))
+					else local `i'difference = 0
+				}
+				
+				local difference = max(`xdifference',`ydifference')
+				foreach i in x y{
+					local `i'max = ``i'max' + `difference'
+					local `i'min = ``i'min' - `difference'
+				}
 			}
-			replace alive = (alive_1==1 & inlist(howmanyalive,2,3)) | (alive_1==0 & howmanyalive==3)
+			
 			if "`visualize'"=="twoway"{
-				twoway scatter dimy dimx if alive,  mcolor(black) ||, name(time`x',replace) ysc(r(0 `dimensions') off) xsc(r(0 `dimensions') off) xtitle("") ytitle("") graphregion(margin(zero)) legend(off) yla(,nogrid) `options'
+				twoway scatter dimy dimx if alive,  mcolor(black) `size_option'||, name(time`x',replace) ysc(r(`ymin' `ymax') off) xsc(r(`xmin' `xmax') off)  xlabel(`xmin'(1)`xmax') yla(`ymin'(1)`ymax') xtitle("") ytitle("") graphregion(margin(zero)  color(white)) legend(off) yla(,nogrid)  plotregion(lcolor(black))
+				if `"`export'"'!="" gr export "`export'_`:di %0`=strlen("`time'")'.0f `x''.png", as(png) replace width(1080) height(1080) 
+				graph drop time`x'
 			}
-			if "`visualize'"=="plot"{
-				noisily plot dimy dimx if alive `options'
-			}
-			drop neighboralive alive_1 howmanyalive
-
+			
+			else if "`visualize'"=="plot" noisily plot dimy dimx if alive
+			noisily di `x'
 		}
 	}
 end
