@@ -30,7 +30,7 @@
 {synopt:{opt v:isualize(str)}}  specifies the mode of visualization from the available options plot, twoway, or none. {p_end}
 
 {synopt:{opt d:imensions(#)}}  specifies the starting dimensions of the square grid, if randomly generated (e.g., 50). {p_end}
-{synopt:{opt border(str)}}  specifies the behavior of the border. Specifying infinite causes the border to dynamically expand as cells move beyond the initially specified dimensions. Specifying wrap causes the border to wrap around toroidally such that cells which cross the top border move to the bottom (and vice-versa), and cells which cross the left border move to the right (and vice-versa). {p_end}
+{synopt:{opt border(str)}}  specifies the behavior of the border. Specifying infinite causes the border to dynamically expand as cells move beyond the initially specified dimensions. Specifying wrap causes the border to wrap around toroidally such that cells which cross the top border move to the bottom (and vice-versa), and cells which cross the left border move to the right (and vice-versa). Specifying dead causes the border to be treated as a single layer of permanently dead cells. {p_end}
 
 {syntab:Optional}
 {synopt:{opt i:nput(str)}} optionally allows the input of a starting grid, previously generated using the export option.
@@ -69,6 +69,7 @@
 {opt border(str)}  specifies the behavior of the border.
 Specifying infinite causes the border to dynamically expand as cells move beyond the initially specified dimensions.
 Specifying wrap causes the border to wrap around toroidally such that cells which cross the top border move to the bottom (and vice-versa), and cells which cross the left border move to the right (and vice-versa).
+Specifying dead causes the border to be treated as a single layer of permanently dead cells.
 
 {phang}
 {opt i:nput(str)}  optionally allows the input of a starting grid, previously generated using the export option.
