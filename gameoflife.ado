@@ -1,9 +1,9 @@
-*! gameoflife, v2 (02.07.2022), Ali Atia, alitarekatia@gmail.com
+*! gameoflife, v3 (03.22.2022), Ali Atia, alitarekatia@gmail.com
 *===============================================================================
 * Program: gameoflife
 * Update: Expanded functionality and improved efficiency
 * Author:  Ali Atia
-* Version: 2 (02.07.2022)
+* Version: 3 (03.22.2022)
 *===============================================================================
 
 program define gameoflife
@@ -171,17 +171,9 @@ program define gameoflife
 			
 			if "`border'"=="infinite" & "`visualize'"=="twoway"{
 				foreach i in x y{
-					sum dim`i' if alive
-					local `i'max_difference = `r(max)'-``i'max' 
-					local `i'min_difference = `r(min)'-``i'min' 
-					if ``i'max_difference'>0 & ``i'min_difference'<0 local `i'difference = max(``i'max_difference',abs(``i'min_difference'))
-					else local `i'difference = 0
-				}
-				
-				local difference = max(`xdifference',`ydifference')
-				foreach i in x y{
-					local `i'max = ``i'max' + `difference'
-					local `i'min = ``i'min' - `difference'
+					sum dim`i'
+					if r(max) > ``i'max' local `i'max = r(max)
+					if r(min) < ``i'min' local `i'min = r(min)
 				}
 			}
 			
